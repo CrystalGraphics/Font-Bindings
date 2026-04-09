@@ -85,21 +85,32 @@ bitmap.free();
 shape.free();
 ```
 
-## Native Library Loading
+## Building Natives
 
-### FreeType + HarfBuzz
-1. `-Dfreetype.harfbuzz.native.path=/path/to/dir`
-2. Classpath: `/natives/{platform}/libfreetype_harfbuzz_jni.{so,dylib,dll}`
-3. System `java.library.path`
+The JNI bindings for **FreeType**, **HarfBuzz** and **MSDFgen** are compiled into a single native
+shared library (`freetype_msdfgen_harfbuzz_jni`) per platform using **Zig as a cross-compiler**.
 
-### MSDFgen
-1. `-Dmsdfgen.library.path=/path/to/lib`
-2. Classpath extraction (extracts from JAR to temp directory)
-3. System `java.library.path`
+The build system is **library-agnostic**: all library definitions are in `gradle.properties`. The
+Gradle script reads the library list, compiles each one, and links all objects into a single shared
+library.
 
-## Building from Source
+```
+native-build.gradle.kts    — Generic Zig-based cross-platform build (no hardcoded library properties)
+gradle.properties          — All library definitions, versions, targets, compiler flags
+include/jni/               — Platform-independent JNI headers for cross-compilation
+native/                    — Native source trees (local sources, overrides, git clones)
+```
 
-See [docs/BUILD_NATIVES.md](docs/BUILD_NATIVES.md) for FreeType+HarfBuzz and [docs/MSDFGEN_BUILD_NATIVES.md](docs/MSDFGEN_BUILD_NATIVES.md) for MSDFgen.
+All tasks are in the `native build` group:
+
+| Task                 | Description                                                     |
+|----------------------|-----------------------------------------------------------------|
+| `downloadZig`        | Download Zig compiler (auto-skips if on PATH)                   |
+| `downloadNativeDeps` | Download all libraries with `source=download:`                  |
+| `buildNatives`       | Cross-compile for all targets (depends on `downloadNativeDeps`) |
+| `buildNativesLocal`  | Prints command to build for current platform only               |
+| `cleanNatives`       | Remove all native build artifacts and output binaries           |
+
 
 ## API Reference
 
@@ -107,13 +118,10 @@ See [docs/BUILD_NATIVES.md](docs/BUILD_NATIVES.md) for FreeType+HarfBuzz and [do
 - [FreeType API](docs/FREETYPE_API.md)
 - [HarfBuzz API](docs/HARFBUZZ_API.md)
 - [Text Rendering Guide](docs/TEXT_RENDERING_GUIDE.md)
-- [macOS Compatibility](docs/MACOS_COMPATIBILITY.md)
 
 ### MSDFgen
-- [MSDFgen FreeType Integration](docs/MSDFGEN_FREETYPE_INTEGRATION.md)
 - [MSDFgen Integration Guide](docs/MSDFGEN_INTEGRATION_GUIDE.md)
-- [MSDFgen Build Natives](docs/MSDFGEN_BUILD_NATIVES.md)
-- [MSDFgen macOS Compatibility](docs/MSDFGEN_MACOS_COMPATIBILITY.md)
+- [MSDFgen FreeType Integration](docs/MSDFGEN_FREETYPE_INTEGRATION.md)
 
 ### MSDFgen API Design
 - `MSDFShape` / `MSDFContour` / `MSDFSegment` - vector shape construction (mirrors msdfgen C++ API)
