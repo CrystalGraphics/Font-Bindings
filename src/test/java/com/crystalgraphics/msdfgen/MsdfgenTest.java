@@ -22,11 +22,11 @@ public class MsdfgenTest {
         assertNotNull(libName);
         String os = NativeLoader.detectOS();
         if ("windows".equals(os)) {
-            assertEquals("msdfgen-jni.dll", libName);
+            assertEquals("freetype_msdfgen_harfbuzz_jni.dll", libName);
         } else if ("macos".equals(os)) {
-            assertEquals("libmsdfgen-jni.dylib", libName);
+            assertEquals("libfreetype_msdfgen_harfbuzz_jni..dylib", libName);
         } else {
-            assertEquals("libmsdfgen-jni.so", libName);
+            assertEquals("libfreetype_msdfgen_harfbuzz_jni..so", libName);
         }
     }
 
