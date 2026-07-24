@@ -1,17 +1,32 @@
 package com.crystalgraphics.msdfgen;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Represents an MSDFgen Shape - a 2D vector shape composed of contours.
  * Manages native memory - must be {@link #free()}'d when no longer needed.
+ *
+ * <h3>Thread safety of {@link #free()}</h3>
+ * <p>{@code freed} is an {@link AtomicBoolean}, and {@link #free()} only calls
+ * the native free once, via {@code compareAndSet}. This makes {@link #free()}
+ * safe to call explicitly from owning code <em>and</em> safe as a finalizer
+ * backstop for anyone who forgets to — whichever runs first wins the race,
+ * and the other becomes a no-op. (Previously {@code freed} was a plain
+ * {@code boolean}: a caller explicitly freeing a shape while the finalizer
+ * thread concurrently ran its own free-if-not-freed check could both observe
+ * {@code freed == false} and both call the native free, corrupting the
+ * native heap. That race is why some call sites used to avoid calling
+ * {@link #free()} at all and relied solely on finalization — with this fix,
+ * explicit freeing is safe again and should be preferred, since it doesn't
+ * depend on GC/finalizer timing to bound native memory use.)</p>
  */
 public final class MSDFShape {
 
     private long nativeHandle;
-    private boolean freed;
+    private final AtomicBoolean freed = new AtomicBoolean(false);
 
     MSDFShape(long nativeHandle) {
         this.nativeHandle = nativeHandle;
-        this.freed = false;
     }
 
     public static MSDFShape create() {
@@ -119,15 +134,14 @@ public final class MSDFShape {
     }
 
     public void free() {
-        if (!freed) {
+        if (freed.compareAndSet(false, true)) {
             MSDFNative.nShapeFree(nativeHandle);
-            freed = true;
             nativeHandle = 0;
         }
     }
 
     public boolean isFreed() {
-        return freed;
+        return freed.get();
     }
 
     long getNativeHandle() {
@@ -136,16 +150,14 @@ public final class MSDFShape {
     }
 
     private void checkNotFreed() {
-        if (freed) {
+        if (freed.get()) {
             throw new IllegalStateException("Shape has been freed");
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!freed) {
-            free();
-        }
+        free();
         super.finalize();
     }
 }

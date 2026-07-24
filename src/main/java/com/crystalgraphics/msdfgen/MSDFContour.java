@@ -1,15 +1,21 @@
 package com.crystalgraphics.msdfgen;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * {@code freed} is an {@link AtomicBoolean} so {@link #free()} calls the
+ * native free exactly once even under a race between an explicit caller and
+ * the finalizer — see {@link MSDFShape}'s javadoc for the full rationale.
+ */
 public final class MSDFContour {
 
     private long nativeHandle;
     private final boolean owned;
-    private boolean freed;
+    private final AtomicBoolean freed = new AtomicBoolean(false);
 
     MSDFContour(long nativeHandle, boolean owned) {
         this.nativeHandle = nativeHandle;
         this.owned = owned;
-        this.freed = false;
     }
 
     public static MSDFContour create() {
@@ -70,15 +76,14 @@ public final class MSDFContour {
     }
 
     public void free() {
-        if (!freed && owned) {
+        if (owned && freed.compareAndSet(false, true)) {
             MSDFNative.nContourFree(nativeHandle);
-            freed = true;
             nativeHandle = 0;
         }
     }
 
     public boolean isFreed() {
-        return freed;
+        return freed.get();
     }
 
     long getNativeHandle() {
@@ -87,16 +92,14 @@ public final class MSDFContour {
     }
 
     private void checkNotFreed() {
-        if (freed) {
+        if (freed.get()) {
             throw new IllegalStateException("Contour has been freed");
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!freed && owned) {
-            free();
-        }
+        free();
         super.finalize();
     }
 }

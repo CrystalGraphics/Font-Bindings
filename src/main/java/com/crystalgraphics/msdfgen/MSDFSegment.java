@@ -1,15 +1,21 @@
 package com.crystalgraphics.msdfgen;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * {@code freed} is an {@link AtomicBoolean} so {@link #free()} calls the
+ * native free exactly once even under a race between an explicit caller and
+ * the finalizer — see {@link MSDFShape}'s javadoc for the full rationale.
+ */
 public final class MSDFSegment {
 
     private long nativeHandle;
     private final boolean owned;
-    private boolean freed;
+    private final AtomicBoolean freed = new AtomicBoolean(false);
 
     MSDFSegment(long nativeHandle, boolean owned) {
         this.nativeHandle = nativeHandle;
         this.owned = owned;
-        this.freed = false;
     }
 
     public static MSDFSegment createLinear() {
@@ -116,15 +122,14 @@ public final class MSDFSegment {
     }
 
     public void free() {
-        if (!freed && owned) {
+        if (owned && freed.compareAndSet(false, true)) {
             MSDFNative.nSegmentFree(nativeHandle);
-            freed = true;
             nativeHandle = 0;
         }
     }
 
     public boolean isFreed() {
-        return freed;
+        return freed.get();
     }
 
     long getNativeHandle() {
@@ -133,16 +138,14 @@ public final class MSDFSegment {
     }
 
     private void checkNotFreed() {
-        if (freed) {
+        if (freed.get()) {
             throw new IllegalStateException("Segment has been freed");
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!freed && owned) {
-            free();
-        }
+        free();
         super.finalize();
     }
 }

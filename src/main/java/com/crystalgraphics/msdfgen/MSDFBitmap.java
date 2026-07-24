@@ -1,8 +1,16 @@
 package com.crystalgraphics.msdfgen;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Represents an MSDFgen bitmap that holds SDF/MSDF pixel data.
  * Manages native memory - must be {@link #free()}'d when no longer needed.
+ *
+ * <p>{@code freed} is an {@link AtomicBoolean} so {@link #free()} calls the
+ * native free exactly once even if an explicit caller and the finalizer race
+ * to free the same instance concurrently — see {@link MSDFShape}'s javadoc
+ * for the full rationale (this class had the identical plain-{@code boolean}
+ * double-free race).</p>
  */
 public final class MSDFBitmap {
 
@@ -10,14 +18,13 @@ public final class MSDFBitmap {
     private final int type;
     private final int width;
     private final int height;
-    private boolean freed;
+    private final AtomicBoolean freed = new AtomicBoolean(false);
 
     private MSDFBitmap(long nativeHandle, int type, int width, int height) {
         this.nativeHandle = nativeHandle;
         this.type = type;
         this.width = width;
         this.height = height;
-        this.freed = false;
     }
 
     public static MSDFBitmap allocSdf(int width, int height) {
@@ -92,15 +99,14 @@ public final class MSDFBitmap {
     }
 
     public void free() {
-        if (!freed) {
+        if (freed.compareAndSet(false, true)) {
             MSDFNative.nBitmapFree(nativeHandle, type);
-            freed = true;
             nativeHandle = 0;
         }
     }
 
     public boolean isFreed() {
-        return freed;
+        return freed.get();
     }
 
     long getNativeHandle() {
@@ -109,16 +115,14 @@ public final class MSDFBitmap {
     }
 
     private void checkNotFreed() {
-        if (freed) {
+        if (freed.get()) {
             throw new IllegalStateException("Bitmap has been freed");
         }
     }
 
     @Override
     protected void finalize() throws Throwable {
-        if (!freed) {
-            free();
-        }
+        free();
         super.finalize();
     }
 }

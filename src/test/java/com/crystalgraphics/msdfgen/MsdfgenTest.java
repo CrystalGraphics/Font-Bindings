@@ -24,9 +24,9 @@ public class MsdfgenTest {
         if ("windows".equals(os)) {
             assertEquals("freetype_msdfgen_harfbuzz_jni.dll", libName);
         } else if ("macos".equals(os)) {
-            assertEquals("libfreetype_msdfgen_harfbuzz_jni..dylib", libName);
+            assertEquals("libfreetype_msdfgen_harfbuzz_jni.dylib", libName);
         } else {
-            assertEquals("libfreetype_msdfgen_harfbuzz_jni..so", libName);
+            assertEquals("libfreetype_msdfgen_harfbuzz_jni.so", libName);
         }
     }
 
