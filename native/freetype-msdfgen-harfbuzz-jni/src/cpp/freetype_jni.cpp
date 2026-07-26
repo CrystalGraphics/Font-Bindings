@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include FT_MULTIPLE_MASTERS_H
+#include FT_BBOX_H
 
 // Tracks memory buffers allocated for FT_New_Memory_Face.
 // FreeType requires the buffer to remain valid for the face's lifetime,
@@ -409,6 +410,87 @@ JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFace_nOutlineTranslat
         return;
     }
     FT_Outline_Translate(&face->glyph->outline, (FT_Pos)xOffset, (FT_Pos)yOffset);
+}
+
+JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFace_nOutlineEmbolden
+  (JNIEnv *env, jclass, jlong facePtr, jlong strength) {
+    FT_Face face = (FT_Face)(intptr_t)facePtr;
+    if (!face->glyph) {
+        throwException(env, "java/lang/IllegalStateException",
+            "No glyph loaded. Call loadGlyph() or loadChar() before outlineEmbolden().");
+        return;
+    }
+    if (face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) {
+        throwException(env, "java/lang/IllegalStateException",
+            "Loaded glyph has no outline (format is not FT_GLYPH_FORMAT_OUTLINE). "
+            "Load with FT_LOAD_NO_BITMAP to ensure outline availability.");
+        return;
+    }
+    FT_Error err = FT_Outline_Embolden(&face->glyph->outline, (FT_Pos)strength);
+    if (err) {
+        throwFreeTypeException(env, err, "FT_Outline_Embolden");
+        return;
+    }
+    // FT_Outline_Embolden does not adjust glyph metrics/advance itself (see FreeType docs).
+    // width/height/bearing must reflect the ACTUAL post-embolden bbox, not strength added
+    // uniformly to the pre-embolden values — embolden's per-point offset isn't a uniform
+    // bbox growth (curved corners in particular move by less than a straight edge's normal
+    // offset), so a flat "+= strength" approximation can leave the quad geometry (sized from
+    // these metrics) very slightly mismatched against the actual rendered/uploaded bitmap,
+    // showing up as a sliver shaved off or added onto an edge. Same class of bug outlineShear
+    // had — recompute from the real transformed outline instead of approximating.
+    FT_BBox bbox;
+    FT_Outline_Get_BBox(&face->glyph->outline, &bbox);
+    face->glyph->metrics.width = bbox.xMax - bbox.xMin;
+    face->glyph->metrics.height = bbox.yMax - bbox.yMin;
+    face->glyph->metrics.horiBearingX = bbox.xMin;
+    face->glyph->metrics.horiBearingY = bbox.yMax;
+    // Advance (pen movement) isn't bbox-derived — still needs the explicit widen so the next
+    // glyph clears this one's thicker stems.
+    if (face->glyph->advance.x != 0) {
+        face->glyph->advance.x += strength;
+    }
+    face->glyph->metrics.horiAdvance += strength;
+}
+
+JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFace_nOutlineShear
+  (JNIEnv *env, jclass, jlong facePtr, jdouble skewX) {
+    FT_Face face = (FT_Face)(intptr_t)facePtr;
+    if (!face->glyph) {
+        throwException(env, "java/lang/IllegalStateException",
+            "No glyph loaded. Call loadGlyph() or loadChar() before outlineShear().");
+        return;
+    }
+    if (face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) {
+        throwException(env, "java/lang/IllegalStateException",
+            "Loaded glyph has no outline (format is not FT_GLYPH_FORMAT_OUTLINE). "
+            "Load with FT_LOAD_NO_BITMAP to ensure outline availability.");
+        return;
+    }
+    // x' = x + skewX*y, y' = y — a 16.16 fixed-point shear matrix. Magnitude matches
+    // Chromium/Skia's synthetic-oblique constant (0.25); sign is flipped from Skia's own
+    // -0.25 since this operates on FreeType's Y-up outline space, not Skia's Y-down screen
+    // space — see FTFace.outlineShear's javadoc for why.
+    FT_Matrix matrix;
+    matrix.xx = 0x10000L;
+    matrix.xy = (FT_Fixed)(skewX * 0x10000L);
+    matrix.yx = 0;
+    matrix.yy = 0x10000L;
+    FT_Outline_Transform(&face->glyph->outline, &matrix);
+
+    // FT_Outline_Transform only moves outline points — it does NOT update
+    // face->glyph->metrics (width/height/bearing), same gap FT_Outline_Embolden has (see
+    // above). Left stale, metrics still describe the PRE-shear bounding box while the
+    // glyph actually rendered from this outline is wider/repositioned — CgGlyphPlacement's
+    // quad geometry (sized from these metrics) then disagrees with the rasterized bitmap
+    // (sized from the real, post-shear render), stretching/squishing the texture onto the
+    // wrong-sized quad. Recompute from the transformed outline's real bounding box.
+    FT_BBox bbox;
+    FT_Outline_Get_BBox(&face->glyph->outline, &bbox);
+    face->glyph->metrics.width = bbox.xMax - bbox.xMin;
+    face->glyph->metrics.height = bbox.yMax - bbox.yMin;
+    face->glyph->metrics.horiBearingX = bbox.xMin;
+    face->glyph->metrics.horiBearingY = bbox.yMax;
 }
 
 JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFace_nDoneFace

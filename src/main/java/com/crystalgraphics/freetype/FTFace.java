@@ -218,6 +218,51 @@ public final class FTFace {
         nOutlineTranslate(nativePtr, xOffset, yOffset);
     }
 
+    /**
+     * Synthesizes bold by thickening the currently loaded glyph's outline in-place, via
+     * {@code FT_Outline_Embolden} — the same primitive Skia's {@code SkFreetypeUtil}/
+     * {@code SkScalerContext_FreeType} synthetic-bold path uses (see
+     * {@code docs_research/SYNTHETIC_BOLD_ITALIC_RESEARCH.md}). Must be called after
+     * {@link #loadGlyph}/{@link #loadChar} and before {@link #renderGlyph}, same ordering as
+     * {@link #outlineTranslate}.
+     *
+     * <p>Widens the outline symmetrically (grows both left/right and top/bottom edges),
+     * which also grows the glyph's advance width slightly — FreeType accounts for this
+     * automatically in the post-embolden {@link #getGlyphMetrics()}/advance, matching how
+     * real bold faces have wider glyphs than their regular counterpart.</p>
+     *
+     * @param strength embolden strength in 26.6 fixed-point font units (1px = 64) — Skia's
+     *                 formula is {@code unitsPerEm * pixelSize / 24} converted to 26.6; see
+     *                 the caller for the exact derivation
+     * @throws IllegalStateException if no glyph is loaded or the loaded glyph has no outline
+     */
+    public void outlineEmbolden(long strength) {
+        checkNotDestroyed();
+        nOutlineEmbolden(nativePtr, strength);
+    }
+
+    /**
+     * Synthesizes italic/oblique by shearing the currently loaded glyph's outline in-place —
+     * {@code x' = x + skewX * y}, applied via {@code FT_Outline_Transform} with a 16.16
+     * fixed-point shear matrix. Magnitude mirrors Chromium/Skia's synthetic-oblique constant
+     * ({@code SkScalerContext_FreeType}'s fake-italic matrix, {@code 0.25}), but the SIGN is
+     * flipped from Skia's own {@code -0.25}: Skia expresses that constant in its own Y-down
+     * screen-space convention, while this operates directly on FreeType's outline, which is
+     * Y-up (font design space — ascenders positive). The same visual rightward-leaning italic
+     * needs the opposite sign under the flipped Y axis (confirmed empirically: {@code -0.25}
+     * here produces a backslash-direction lean, not the correct forward lean).
+     * Must be called after {@link #loadGlyph}/{@link #loadChar} and before
+     * {@link #renderGlyph}, same ordering as {@link #outlineTranslate}.
+     *
+     * @param skewX shear factor, dimensionless (the correct forward-leaning constant here is
+     *              {@code +0.25}, not Skia's own {@code -0.25} — see above)
+     * @throws IllegalStateException if no glyph is loaded or the loaded glyph has no outline
+     */
+    public void outlineShear(double skewX) {
+        checkNotDestroyed();
+        nOutlineShear(nativePtr, skewX);
+    }
+
     public long getNativePtr() {
         return nativePtr;
     }
@@ -318,5 +363,7 @@ public final class FTFace {
     private static native boolean nHasKerning(long facePtr);
     private static native int nGetAdvance(long facePtr, int glyphIndex, int loadFlags);
     private static native void nOutlineTranslate(long facePtr, long xOffset, long yOffset);
+    private static native void nOutlineEmbolden(long facePtr, long strength);
+    private static native void nOutlineShear(long facePtr, double skewX);
     private static native void nDoneFace(long facePtr);
 }

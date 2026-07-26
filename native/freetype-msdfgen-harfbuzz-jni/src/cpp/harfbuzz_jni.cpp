@@ -80,12 +80,13 @@ JNIEXPORT jobjectArray JNICALL Java_com_crystalgraphics_harfbuzz_HBBuffer_nGetGl
     hb_glyph_info_t *infos = hb_buffer_get_glyph_infos(buf, &count);
 
     jclass cls = env->FindClass("com/crystalgraphics/harfbuzz/HBGlyphInfo");
-    jmethodID ctor = env->GetMethodID(cls, "<init>", "(II)V");
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "(III)V");
     jobjectArray result = env->NewObjectArray(count, cls, NULL);
 
     for (unsigned int i = 0; i < count; i++) {
         jobject info = env->NewObject(cls, ctor,
-            (jint)infos[i].codepoint, (jint)infos[i].cluster);
+            (jint)infos[i].codepoint, (jint)infos[i].cluster,
+            (jint)hb_glyph_info_get_glyph_flags(&infos[i]));
         env->SetObjectArrayElement(result, i, info);
         env->DeleteLocalRef(info);
     }
