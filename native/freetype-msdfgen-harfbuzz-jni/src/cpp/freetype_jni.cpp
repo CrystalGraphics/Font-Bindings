@@ -172,11 +172,68 @@ JNIEXPORT jintArray JNICALL Java_com_crystalgraphics_freetype_FTFace_nGetGlyphMe
     return result;
 }
 
+/*
+ * Cached FTBitmap class + constructor.
+ *
+ * nGetGlyphBitmap runs once per rasterised glyph, and doing FindClass there meant a classloader
+ * lookup by string name on every glyph -- a cost fixed per call rather than per pixel. The same
+ * pattern in HBBuffer's glyph readback measured as 63% of all HarfBuzz time before it was removed.
+ *
+ * A function-local static is thread-safe to initialise under C++11 (the standard this is built
+ * with), which matters because glyph rasterisation also runs on the background generation
+ * executor. Only the construction uses the passed JNIEnv; the global ref and jmethodID it stores
+ * are valid on any thread afterwards.
+ */
+namespace {
+/*
+ * Deliberately a plain pointer pair with a benign race, NOT a C++11 function-local static.
+ *
+ * A magic static would need __cxa_guard_acquire from the C++ runtime, and this library is
+ * cross-compiled with Zig for five targets where that support cannot be assumed present. Getting
+ * it wrong shows up as a jump through a garbage address rather than a link error, which is
+ * exactly the kind of failure that is expensive to diagnose.
+ *
+ * The race here is harmless: two threads may each build a global ref, and one is then leaked
+ * once, for the process lifetime. Both refs are valid. g_ftBitmapCtor is published before
+ * g_ftBitmapClass and readers test the class, so a thread that sees a non-NULL class also sees a
+ * valid constructor.
+ */
+jclass g_ftBitmapClass = NULL;
+jmethodID g_ftBitmapCtor = NULL;
+
+void ensureFTBitmapClass(JNIEnv *env) {
+    if (g_ftBitmapClass != NULL) {
+        return;
+    }
+    jclass local = env->FindClass("com/crystalgraphics/freetype/FTBitmap");
+    if (local == NULL) {
+        return;
+    }
+    jmethodID ctor = env->GetMethodID(local, "<init>", "(IIII[BII)V");
+    if (ctor == NULL) {
+        env->DeleteLocalRef(local);
+        return;
+    }
+    jclass global = (jclass)env->NewGlobalRef(local);
+    env->DeleteLocalRef(local);
+    if (global == NULL) {
+        return;
+    }
+    g_ftBitmapCtor = ctor;
+    g_ftBitmapClass = global;
+}
+} // namespace
+
 JNIEXPORT jobject JNICALL Java_com_crystalgraphics_freetype_FTFace_nGetGlyphBitmap
   (JNIEnv *env, jclass, jlong facePtr) {
     FT_Face face = (FT_Face)(intptr_t)facePtr;
     FT_GlyphSlot slot = face->glyph;
     FT_Bitmap *bitmap = &slot->bitmap;
+
+    ensureFTBitmapClass(env);
+    if (g_ftBitmapClass == NULL || g_ftBitmapCtor == NULL) {
+        return NULL;
+    }
 
     int bufferSize = abs(bitmap->pitch) * bitmap->rows;
     jbyteArray jBuffer = env->NewByteArray(bufferSize);
@@ -184,15 +241,12 @@ JNIEXPORT jobject JNICALL Java_com_crystalgraphics_freetype_FTFace_nGetGlyphBitm
         env->SetByteArrayRegion(jBuffer, 0, bufferSize, (jbyte *)bitmap->buffer);
     }
 
-    jclass cls = env->FindClass("com/crystalgraphics/freetype/FTBitmap");
-    jmethodID ctor = env->GetMethodID(cls, "<init>", "(IIII[BII)V");
-    jobject result = env->NewObject(cls, ctor,
+    jobject result = env->NewObject(g_ftBitmapClass, g_ftBitmapCtor,
         (jint)bitmap->width, (jint)bitmap->rows,
         (jint)bitmap->pitch, (jint)bitmap->pixel_mode,
         jBuffer,
         (jint)slot->bitmap_left, (jint)slot->bitmap_top);
 
-    env->DeleteLocalRef(cls);
     env->DeleteLocalRef(jBuffer);
     return result;
 }

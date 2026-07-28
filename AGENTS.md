@@ -207,3 +207,80 @@ No runtime dependencies other than the OS C runtime.
 Native build tasks use `notCompatibleWithConfigurationCache()` + `doNotTrackState()` because they invoke
 external commands (Zig compiler, tar). The build works correctly with `--configuration-cache` — cache
 entries are properly discarded for native tasks while other tasks benefit from caching.
+
+## Native gotcha: no C++11 magic statics
+
+**Do not use function-local statics with non-trivial constructors** in the JNI sources:
+
+```cpp
+static Foo &instance(JNIEnv *env) {
+    static Foo f(env);   // NEEDS __cxa_guard_acquire -- do not do this
+    return f;
+}
+```
+
+Thread-safe initialisation of such statics requires `__cxa_guard_acquire`/`__cxa_guard_release`
+from the C++ runtime, which cannot be assumed present across the five Zig cross-compilation
+targets. When it is missing the build still links: the failure appears at runtime as a jump
+through a garbage address, and because these libraries are used from multiple threads it can
+surface far from the actual call. It was observed once as
+`EXCEPTION_ACCESS_VIOLATION at pc=0xffffffffffffffff` crashing inside an unrelated HarfBuzz
+function several test classes later.
+
+For lazily cached JNI handles (`jclass`, `jmethodID`) use plain namespace-scope pointers with a
+benign initialisation race instead — see `ensureFTBitmapClass` in `freetype_jni.cpp`. Two threads
+may each build a global ref and one is leaked once for the process lifetime, which is a far
+cheaper problem than a runtime-dependency crash.
+
+## Native gotcha: cache jclass/jmethodID on hot paths
+
+`FindClass` is a classloader lookup by string name. Doing it per call on a per-glyph path is
+measurable: `HBBuffer.nGetGlyphInfos`/`nGetGlyphPositions` did this plus a Java object allocation
+per glyph, and readback measured as **63% of all HarfBuzz time** before being replaced by
+`nGetGlyphData`, which fills caller-owned primitive arrays instead (52x faster).
+
+Before adding a native function that returns objects, ask whether primitives into a caller-owned
+array would do. `grep -c FindClass *.cpp` is a quick audit of where this pattern still exists.
+
+## Native gotcha: finalizers can free a handle mid-call
+
+Every wrapper here (`HBBuffer`, `HBFont`, `FTFace`, `MSDFShape`, `MSDFBitmap`, …) keeps a native
+pointer in a field and frees it from `finalize()` as a leak backstop. That combination has a race
+that is invisible in the source:
+
+```java
+public int getGlyphData(int[] infoOut, int[] posOut) {
+    return nGetGlyphData(nativePtr, infoOut, posOut);   // buffer may be freed during this call
+}
+```
+
+Once `nativePtr` has been read into the argument, `this` is never used again, so the JIT lets the
+object become unreachable **while the native call that needs it is still running**. A GC in that
+window runs the finalizer and frees the pointer under the native code. The symptom is
+`EXCEPTION_ACCESS_VIOLATION` inside `freetype_msdfgen_harfbuzz_jni.dll`, often at
+`pc=0xffffffffffffffff`, on a call site that looks perfectly safe.
+
+It is timing-dependent, so it hides for long stretches and resurfaces whenever something unrelated
+shifts GC timing — which makes it very easy to blame on whatever was edited last. It was previously
+misattributed to msdfgen's error-correction pass (see `CgMsdfGenerator`'s class javadoc, which still
+carries that older explanation).
+
+**Rule:** any native call that passes a handle owned by a finalizable wrapper must fence the wrapper
+in a `finally`:
+
+```java
+try {
+    return nGetGlyphData(nativePtr, infoOut, posOut);
+} finally {
+    NativeReachability.fence(this);
+}
+```
+
+Fence *every* wrapper whose handle the call receives — `HBShape.shape` fences both the font and the
+buffer, `MSDFGenerator` fences both the bitmap and the shape.
+
+`java.lang.ref.Reference.reachabilityFence` is the right tool but is Java 9+, and this module
+compiles to Java 8 bytecode and runs on a Java 8 VM under MC 1.7.10 — calling it there is a
+`NoSuchMethodError` at runtime rather than a compile error. `NativeReachability.fence` uses the
+synchronized-block form that `reachabilityFence`'s own javadoc names as the pre-Java-9 equivalent.
+Measured cost on the 1000-label text stress scene: none detectable.
