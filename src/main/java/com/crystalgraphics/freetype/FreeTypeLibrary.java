@@ -216,12 +216,8 @@ public final class FreeTypeLibrary {
             if (nativePtr != 0) {
                 System.err.println("[CrystalGraphics] WARNING: FreeTypeLibrary was not destroyed! "
                     + "Call destroy() explicitly to avoid native memory leaks.");
-                try {
-                    nDoneFreeType(nativePtr);
-                } catch (Throwable t) {
-                    // Best-effort cleanup during finalization
-                }
-                nativePtr = 0;
+                // Leaked, not freed: FT_Done_FreeType frees every face under it, and finalizers run in no
+                // order, so a face or HBFont finalized after this would free that memory a second time.
             }
         } finally {
             super.finalize();

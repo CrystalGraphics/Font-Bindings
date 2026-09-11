@@ -178,9 +178,8 @@ public final class FreeTypeMSDFIntegration {
 
     @Override
     protected void finalize() throws Throwable {
-        if (!destroyed) {
-            destroy();
-        }
+        // Left to an explicit destroy(): deinit frees every Font's face, and finalizers run in no order,
+        // so a Font finalized after this would free its face a second time.
         super.finalize();
     }
 

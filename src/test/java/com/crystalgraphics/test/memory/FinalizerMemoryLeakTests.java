@@ -59,14 +59,14 @@ public class FinalizerMemoryLeakTests extends MemoryLeakDetectionBase {
         MemoryMetrics.Snapshot afterGC = MemoryMetrics.takeSnapshot();
         logMemory("After abandon + GC", afterGC);
 
-        // With finalizers, native memory should be cleaned up by GC
+        // Finalizers free what they can in any order: faces, fonts and buffers. An abandoned FT_Library is
+        // leaked, since freeing it would free its faces under a finalizer that has yet to run.
         long rss = PlatformTools.getProcessRSS();
         if (rss > 0) {
             System.out.println("  Process RSS: " + MemoryMetrics.formatBytes(rss));
         }
 
-        System.out.println("  Finalizers should have cleaned up abandoned native resources.");
-        System.out.println("  Java heap objects are GC'd, and finalizers free native FT_Library/FT_Face/hb_font/hb_buffer.");
+        System.out.println("  Finalizers freed the abandoned FT_Face/hb_font/hb_buffer; each FT_Library is leaked.");
     }
 
     private void createAndAbandonResources(byte[] fontData, int iteration) {

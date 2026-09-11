@@ -319,10 +319,13 @@ public final class FTFace {
             if (nativePtr != 0) {
                 System.err.println("[CrystalGraphics] WARNING: FTFace was not destroyed! "
                     + "Call destroy() explicitly to avoid native memory leaks.");
-                try {
-                    nDoneFace(nativePtr);
-                } catch (Throwable t) {
-                    // Best-effort cleanup during finalization
+                // A destroyed library already freed this face with itself.
+                if (library == null || !library.isDestroyed()) {
+                    try {
+                        nDoneFace(nativePtr);
+                    } catch (Throwable t) {
+                        // Best-effort cleanup during finalization
+                    }
                 }
                 nativePtr = 0;
             }
