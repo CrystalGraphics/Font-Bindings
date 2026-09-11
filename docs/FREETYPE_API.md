@@ -8,10 +8,27 @@ Entry point. One instance per application.
 | Method | Description |
 |--------|-------------|
 | `create()` | Initialize FreeType library |
-| `newFace(path, index)` | Load font from file |
-| `newFaceFromMemory(data, index)` | Load font from byte array |
+| `newFace(path, index)` | Load font from file. Any path; on Windows the file stays deletable while the face is open |
+| `newFaceFromMemory(data, index)` | Load font from byte array (copied natively, per face) |
+| `newFaceFromFontData(data, index)` | Load font from an `FTFontData`: one native copy shared by every face opened on it |
 | `getVersion()` | Returns `[major, minor, patch]` |
 | `destroy()` | Release all resources |
+
+### `FTFontData`
+Font bytes copied into native memory once, for any number of faces and msdfgen fonts.
+
+```java
+FTFontData data = FTFontData.copyOf(fontBytes);
+FTFace small = library.newFaceFromFontData(data, 0);
+FTFace large = workerLibrary.newFaceFromFontData(data, 0);   // no second copy
+data.release();   // each face keeps the bytes until it is destroyed
+```
+
+| Method | Description |
+|--------|-------------|
+| `copyOf(bytes)` | Copy into native memory |
+| `release()` | Drop this reference; faces and fonts opened on it hold their own |
+| `size()` | Number of bytes |
 
 ### `FTFace`
 Loaded font face. Set size before loading glyphs.

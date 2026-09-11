@@ -21,6 +21,8 @@ class FreetypeHandle {
     friend void deinitializeFreetype(FreetypeHandle *library);
     friend FontHandle *loadFont(FreetypeHandle *library, const char *filename);
     friend FontHandle *loadFontData(FreetypeHandle *library, const byte *data, int length);
+    friend FontHandle *loadFontFace(FreetypeHandle *library, const char *filename, long faceIndex);
+    friend FontHandle *loadFontMemory(FreetypeHandle *library, const byte *data, long length, long faceIndex);
 #ifndef MSDFGEN_DISABLE_VARIABLE_FONTS
     friend bool setFontVariationAxis(FreetypeHandle *library, FontHandle *font, const char *name, double coordinate);
     friend bool listFontVariationAxes(std::vector<FontVariationAxis> &axes, FreetypeHandle *library, FontHandle *font);
@@ -34,6 +36,8 @@ class FontHandle {
     friend FontHandle *adoptFreetypeFont(FT_Face ftFace);
     friend FontHandle *loadFont(FreetypeHandle *library, const char *filename);
     friend FontHandle *loadFontData(FreetypeHandle *library, const byte *data, int length);
+    friend FontHandle *loadFontFace(FreetypeHandle *library, const char *filename, long faceIndex);
+    friend FontHandle *loadFontMemory(FreetypeHandle *library, const byte *data, long length, long faceIndex);
     friend void destroyFont(FontHandle *font);
     friend bool getFontMetrics(FontMetrics &metrics, FontHandle *font, FontCoordinateScaling coordinateScaling);
     friend bool getFontWhitespaceWidth(double &spaceAdvance, double &tabAdvance, FontHandle *font, FontCoordinateScaling coordinateScaling);
@@ -175,18 +179,38 @@ FT_Error readFreetypeOutline(Shape &output, FT_Outline *outline, double scale) {
     return error;
 }
 
-FontHandle *loadFont(FreetypeHandle *library, const char *filename) {
+// CrystalGraphics: face `faceIndex` of a file, so a collection's later faces load too.
+FontHandle *loadFontFace(FreetypeHandle *library, const char *filename, long faceIndex) {
     if (!library)
         return NULL;
     FontHandle *handle = new FontHandle;
     handle->fontData = NULL;
-    FT_Error error = FT_New_Face(library->library, filename, 0, &handle->face);
+    FT_Error error = FT_New_Face(library->library, filename, faceIndex, &handle->face);
     if (error) {
         delete handle;
         return NULL;
     }
     handle->ownership = true;
     return handle;
+}
+
+// CrystalGraphics: a face of bytes the caller keeps alive until destroyFont, read without a copy.
+FontHandle *loadFontMemory(FreetypeHandle *library, const byte *data, long length, long faceIndex) {
+    if (!library || !data || length <= 0)
+        return NULL;
+    FontHandle *handle = new FontHandle;
+    handle->fontData = NULL;
+    FT_Error error = FT_New_Memory_Face(library->library, data, length, faceIndex, &handle->face);
+    if (error) {
+        delete handle;
+        return NULL;
+    }
+    handle->ownership = true;
+    return handle;
+}
+
+FontHandle *loadFont(FreetypeHandle *library, const char *filename) {
+    return loadFontFace(library, filename, 0);
 }
 
 FontHandle *loadFontData(FreetypeHandle *library, const byte *data, int length) {

@@ -91,6 +91,8 @@ JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nFreetypeInit
 JNIEXPORT void JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nFreetypeDeinit(JNIEnv*, jclass, jlong);
 JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFont(JNIEnv*, jclass, jlong, jstring, jlongArray);
 JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFontData(JNIEnv*, jclass, jlong, jbyteArray, jint, jlongArray);
+JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFontFace(JNIEnv*, jclass, jlong, jstring, jint, jlongArray);
+JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadSharedFontData(JNIEnv*, jclass, jlong, jlong, jint, jlongArray);
 JNIEXPORT void JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nDestroyFont(JNIEnv*, jclass, jlong);
 JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadGlyph(JNIEnv*, jclass, jlong, jint, jint, jdoubleArray, jlongArray);
 JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadGlyphByIndex(JNIEnv*, jclass, jlong, jint, jint, jdoubleArray, jlongArray);

@@ -94,10 +94,17 @@ FreeTypeMSDFIntegration ft = FreeTypeMSDFIntegration.create();
 try {
     // Load from file path
     FreeTypeMSDFIntegration.Font font = ft.loadFont("/path/to/font.ttf");
+
+    // Or a later face of a collection
+    // FreeTypeMSDFIntegration.Font font = ft.loadFont("/path/to/family.ttc", 1);
     
     // Or load from byte array (embedded resource)
     // byte[] fontData = readResource("fonts/myfont.ttf");
     // FreeTypeMSDFIntegration.Font font = ft.loadFontData(fontData);
+
+    // Or from bytes already in native memory, shared with FreeType faces on them
+    // FTFontData data = FTFontData.copyOf(fontData);
+    // FreeTypeMSDFIntegration.Font font = ft.loadFontData(data, 0);
     
     // Or load from InputStream
     // InputStream is = getClass().getResourceAsStream("/fonts/myfont.ttf");

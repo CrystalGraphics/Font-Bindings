@@ -1,4 +1,5 @@
 #include "msdfgen_jni.h"
+#include "headers.h"
 #include "msdfgen.h"
 #include "core/Shape.h"
 #include "core/Contour.h"
@@ -10,6 +11,8 @@
 #include "core/render-sdf.h"
 #include "core/ShapeDistanceFinder.h"
 #include <cstring>
+#include <map>
+#include <mutex>
 #include <vector>
 
 #define MSDF_SUCCESS 0
@@ -830,6 +833,16 @@ JNIEXPORT jlong JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nBitmapGetPi
 
 #ifdef MSDFGEN_USE_FREETYPE
 #include "ext/import-font.h"
+
+namespace msdfgen {
+// Ours, in overrides/msdfgen/ext/import-font.cpp.
+FontHandle *loadFontFace(FreetypeHandle *library, const char *filename, long faceIndex);
+FontHandle *loadFontMemory(FreetypeHandle *library, const byte *data, long length, long faceIndex);
+}
+
+// The shared bytes a font from nLoadSharedFontData reads, released once destroyFont is done with them.
+static std::map<msdfgen::FontHandle*, SharedFontData*> fontSharedData;
+static std::mutex fontSharedDataMutex;
 #endif
 
 JNIEXPORT jboolean JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nHasFreetypeSupport(JNIEnv*, jclass) {
@@ -869,11 +882,9 @@ JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFont(
     JNIEnv* env, jclass, jlong ftHandle, jstring filename, jlongArray fontHandleOut) {
 #ifdef MSDFGEN_USE_FREETYPE
     if (ftHandle == 0 || filename == nullptr) return MSDF_ERR_INVALID_ARG;
-    const char* path = env->GetStringUTFChars(filename, nullptr);
-    if (!path) return MSDF_ERR_FAILED;
+    std::string path = utf8Of(env, filename);
     msdfgen::FontHandle* font = msdfgen::loadFont(
-        reinterpret_cast<msdfgen::FreetypeHandle*>(ftHandle), path);
-    env->ReleaseStringUTFChars(filename, path);
+        reinterpret_cast<msdfgen::FreetypeHandle*>(ftHandle), path.c_str());
     if (!font) return MSDF_ERR_FAILED;
     jlong handle = reinterpret_cast<jlong>(font);
     env->SetLongArrayRegion(fontHandleOut, 0, 1, &handle);
@@ -904,10 +915,65 @@ JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFontData
 #endif
 }
 
+JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadFontFace(
+    JNIEnv* env, jclass, jlong ftHandle, jstring filename, jint faceIndex, jlongArray fontHandleOut) {
+#ifdef MSDFGEN_USE_FREETYPE
+    if (ftHandle == 0 || filename == nullptr || faceIndex < 0) return MSDF_ERR_INVALID_ARG;
+    std::string path = utf8Of(env, filename);
+    msdfgen::FontHandle* font = msdfgen::loadFontFace(
+        reinterpret_cast<msdfgen::FreetypeHandle*>(ftHandle), path.c_str(), faceIndex);
+    if (!font) return MSDF_ERR_FAILED;
+    jlong handle = reinterpret_cast<jlong>(font);
+    env->SetLongArrayRegion(fontHandleOut, 0, 1, &handle);
+    return MSDF_SUCCESS;
+#else
+    (void)env; (void)ftHandle; (void)filename; (void)faceIndex; (void)fontHandleOut;
+    return MSDF_ERR_FAILED;
+#endif
+}
+
+JNIEXPORT jint JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nLoadSharedFontData(
+    JNIEnv* env, jclass, jlong ftHandle, jlong dataHandle, jint faceIndex, jlongArray fontHandleOut) {
+#ifdef MSDFGEN_USE_FREETYPE
+    if (ftHandle == 0 || dataHandle == 0 || faceIndex < 0) return MSDF_ERR_INVALID_ARG;
+    SharedFontData* data = retainSharedFontData(dataHandle);
+    msdfgen::FontHandle* font = msdfgen::loadFontMemory(
+        reinterpret_cast<msdfgen::FreetypeHandle*>(ftHandle), data->bytes, data->size, faceIndex);
+    if (!font) {
+        releaseSharedFontData(data);
+        return MSDF_ERR_FAILED;
+    }
+    {
+        std::lock_guard<std::mutex> lock(fontSharedDataMutex);
+        fontSharedData[font] = data;
+    }
+    jlong handle = reinterpret_cast<jlong>(font);
+    env->SetLongArrayRegion(fontHandleOut, 0, 1, &handle);
+    return MSDF_SUCCESS;
+#else
+    (void)env; (void)ftHandle; (void)dataHandle; (void)faceIndex; (void)fontHandleOut;
+    return MSDF_ERR_FAILED;
+#endif
+}
+
 JNIEXPORT void JNICALL Java_com_crystalgraphics_msdfgen_MSDFNative_nDestroyFont(JNIEnv*, jclass, jlong fontHandle) {
 #ifdef MSDFGEN_USE_FREETYPE
     if (fontHandle != 0) {
-        msdfgen::destroyFont(reinterpret_cast<msdfgen::FontHandle*>(fontHandle));
+        msdfgen::FontHandle* font = reinterpret_cast<msdfgen::FontHandle*>(fontHandle);
+        // Unmapped before the font is freed: its address may be reused by the next load at once.
+        SharedFontData* data = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(fontSharedDataMutex);
+            std::map<msdfgen::FontHandle*, SharedFontData*>::iterator it = fontSharedData.find(font);
+            if (it != fontSharedData.end()) {
+                data = it->second;
+                fontSharedData.erase(it);
+            }
+        }
+        msdfgen::destroyFont(font);
+        if (data != nullptr) {
+            releaseSharedFontData(data);
+        }
     }
 #else
     (void)fontHandle;

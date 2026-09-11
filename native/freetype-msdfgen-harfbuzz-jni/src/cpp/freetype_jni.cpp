@@ -8,11 +8,68 @@
 #include FT_MULTIPLE_MASTERS_H
 #include FT_BBOX_H
 
-// Tracks memory buffers allocated for FT_New_Memory_Face.
-// FreeType requires the buffer to remain valid for the face's lifetime,
-// but FT_Done_Face does NOT free the buffer — we must do it ourselves.
-static std::map<FT_Face, FT_Byte*> memoryFaceBuffers;
-static std::mutex memoryFaceBuffersMutex;
+// What a face opened from memory reads. FreeType needs the bytes for the face's whole life and
+// FT_Done_Face does not free them, so they go after it: a face owns its copy, or holds one reference
+// to bytes it shares.
+struct FaceMemory {
+    FT_Byte *owned;
+    SharedFontData *shared;
+};
+static std::map<FT_Face, FaceMemory> faceMemory;
+static std::mutex faceMemoryMutex;
+static std::mutex sharedFontDataMutex;
+
+SharedFontData *retainSharedFontData(jlong handle) {
+    SharedFontData *data = (SharedFontData *)(intptr_t)handle;
+    std::lock_guard<std::mutex> lock(sharedFontDataMutex);
+    data->refs++;
+    return data;
+}
+
+void releaseSharedFontData(SharedFontData *data) {
+    bool last;
+    {
+        std::lock_guard<std::mutex> lock(sharedFontDataMutex);
+        last = --data->refs == 0;
+    }
+    if (last) {
+        free(data->bytes);
+        delete data;
+    }
+}
+
+std::string utf8Of(JNIEnv *env, jstring value) {
+    jsize length = env->GetStringLength(value);
+    const jchar *chars = env->GetStringChars(value, NULL);
+    if (chars == NULL) {
+        return std::string();
+    }
+    std::string out;
+    out.reserve((size_t)length);
+    for (jsize i = 0; i < length; i++) {
+        unsigned int c = chars[i];
+        if (c >= 0xD800 && c <= 0xDBFF && i + 1 < length && chars[i + 1] >= 0xDC00 && chars[i + 1] <= 0xDFFF) {
+            c = 0x10000 + ((c - 0xD800) << 10) + (chars[++i] - 0xDC00);
+        }
+        if (c < 0x80) {
+            out += (char)c;
+        } else if (c < 0x800) {
+            out += (char)(0xC0 | (c >> 6));
+            out += (char)(0x80 | (c & 0x3F));
+        } else if (c < 0x10000) {
+            out += (char)(0xE0 | (c >> 12));
+            out += (char)(0x80 | ((c >> 6) & 0x3F));
+            out += (char)(0x80 | (c & 0x3F));
+        } else {
+            out += (char)(0xF0 | (c >> 18));
+            out += (char)(0x80 | ((c >> 12) & 0x3F));
+            out += (char)(0x80 | ((c >> 6) & 0x3F));
+            out += (char)(0x80 | (c & 0x3F));
+        }
+    }
+    env->ReleaseStringChars(value, chars);
+    return out;
+}
 
 // All JNI functions must use C linkage to prevent C++ name mangling.
 // Without this, the JVM cannot find the exported symbols at runtime
@@ -72,10 +129,9 @@ JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nDoneFr
 JNIEXPORT jlong JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nNewFace
   (JNIEnv *env, jclass, jlong libraryPtr, jstring jFilePath, jint faceIndex) {
     FT_Library library = (FT_Library)(intptr_t)libraryPtr;
-    const char *filePath = env->GetStringUTFChars(jFilePath, NULL);
+    std::string filePath = utf8Of(env, jFilePath);
     FT_Face face;
-    FT_Error err = FT_New_Face(library, filePath, faceIndex, &face);
-    env->ReleaseStringUTFChars(jFilePath, filePath);
+    FT_Error err = FT_New_Face(library, filePath.c_str(), faceIndex, &face);
     if (err) {
         throwFreeTypeException(env, err, "FT_New_Face failed");
         return 0;
@@ -101,11 +157,52 @@ JNIEXPORT jlong JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nNewFa
     }
 
     {
-        std::lock_guard<std::mutex> lock(memoryFaceBuffersMutex);
-        memoryFaceBuffers[face] = persistentData;
+        std::lock_guard<std::mutex> lock(faceMemoryMutex);
+        faceMemory[face] = FaceMemory{persistentData, nullptr};
     }
 
     return (jlong)(intptr_t)face;
+}
+
+JNIEXPORT jlong JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nNewFaceFromShared
+  (JNIEnv *env, jclass, jlong libraryPtr, jlong dataHandle, jint faceIndex) {
+    FT_Library library = (FT_Library)(intptr_t)libraryPtr;
+    SharedFontData *data = retainSharedFontData(dataHandle);
+
+    FT_Face face;
+    FT_Error err = FT_New_Memory_Face(library, data->bytes, data->size, faceIndex, &face);
+    if (err) {
+        releaseSharedFontData(data);
+        throwFreeTypeException(env, err, "FT_New_Memory_Face failed");
+        return 0;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(faceMemoryMutex);
+        faceMemory[face] = FaceMemory{nullptr, data};
+    }
+
+    return (jlong)(intptr_t)face;
+}
+
+JNIEXPORT jlong JNICALL Java_com_crystalgraphics_freetype_FTFontData_nCreate
+  (JNIEnv *env, jclass, jbyteArray jData, jint dataLen) {
+    FT_Byte *bytes = (FT_Byte *)malloc((size_t)dataLen);
+    if (bytes == NULL) {
+        return 0;
+    }
+    env->GetByteArrayRegion(jData, 0, dataLen, (jbyte *)bytes);
+
+    SharedFontData *data = new SharedFontData;
+    data->bytes = bytes;
+    data->size = dataLen;
+    data->refs = 1;
+    return (jlong)(intptr_t)data;
+}
+
+JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFontData_nRelease
+  (JNIEnv *env, jclass, jlong handle) {
+    releaseSharedFontData((SharedFontData *)(intptr_t)handle);
 }
 
 JNIEXPORT jintArray JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nGetVersion
@@ -551,30 +648,30 @@ JNIEXPORT void JNICALL Java_com_crystalgraphics_freetype_FTFace_nDoneFace
   (JNIEnv *env, jclass, jlong facePtr) {
     FT_Face face = (FT_Face)(intptr_t)facePtr;
 
-    FT_Byte *bufferToFree = NULL;
+    FaceMemory memory = { nullptr, nullptr };
     {
-        std::lock_guard<std::mutex> lock(memoryFaceBuffersMutex);
-        std::map<FT_Face, FT_Byte*>::iterator it = memoryFaceBuffers.find(face);
-        if (it != memoryFaceBuffers.end()) {
-            bufferToFree = it->second;
-            memoryFaceBuffers.erase(it);
+        std::lock_guard<std::mutex> lock(faceMemoryMutex);
+        std::map<FT_Face, FaceMemory>::iterator it = faceMemory.find(face);
+        if (it != faceMemory.end()) {
+            memory = it->second;
+            faceMemory.erase(it);
         }
     }
 
     FT_Done_Face(face);
 
-    if (bufferToFree != NULL) {
-        free(bufferToFree);
+    free(memory.owned);
+    if (memory.shared != nullptr) {
+        releaseSharedFontData(memory.shared);
     }
 }
 
 JNIEXPORT jint JNICALL Java_com_crystalgraphics_freetype_FreeTypeLibrary_nGetFaceCount
   (JNIEnv *env, jclass, jlong libraryPtr, jstring jFilePath) {
     FT_Library library = (FT_Library)(intptr_t)libraryPtr;
-    const char *filePath = env->GetStringUTFChars(jFilePath, NULL);
+    std::string filePath = utf8Of(env, jFilePath);
     FT_Face face;
-    FT_Error err = FT_New_Face(library, filePath, 0, &face);
-    env->ReleaseStringUTFChars(jFilePath, filePath);
+    FT_Error err = FT_New_Face(library, filePath.c_str(), 0, &face);
     if (err) {
         throwFreeTypeException(env, err, "FT_New_Face failed (face count query)");
         return 0;

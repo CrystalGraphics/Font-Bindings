@@ -157,6 +157,45 @@ public final class FreeTypeLibrary {
     }
 
     /**
+     * Opens a face on font bytes already in native memory, without copying them: every face opened on
+     * one {@link FTFontData} — from any library, on any thread — reads the same bytes.
+     *
+     * <pre>{@code
+     * FTFontData data = FTFontData.copyOf(fontBytes);
+     * FTFace face = ft.newFaceFromFontData(data, 0);
+     * data.release();   // the face keeps the bytes until it is destroyed
+     * }</pre>
+     *
+     * @param data font bytes, not yet released
+     * @param faceIndex face index within the data (0 for a single font)
+     * @return a new FTFace
+     * @throws FreeTypeException if the data is not a font FreeType can open
+     * @throws IllegalStateException if this library has been destroyed or the data released
+     */
+    public FTFace newFaceFromFontData(FTFontData data, int faceIndex) {
+        checkNotDestroyed();
+        if (data == null) {
+            throw new IllegalArgumentException("data must not be null");
+        }
+        long facePtr;
+        synchronized (data) {
+            long dataPtr = data.getNativePtr();
+            synchronized (lock) {
+                facePtr = nNewFaceFromShared(nativePtr, dataPtr, faceIndex);
+            }
+        }
+        if (facePtr == 0) {
+            throw new FreeTypeException(FTErrors.FT_Err_Cannot_Open_Resource,
+                    "Failed to load font face from shared memory (" + data.size() + " bytes)");
+        }
+        FTFace face = new FTFace(facePtr, this);
+        synchronized (faces) {
+            faces.add(new WeakReference<FTFace>(face));
+        }
+        return face;
+    }
+
+    /**
      * Returns the FreeType library version as {major, minor, patch}.
      *
      * @return three-element array [major, minor, patch]
@@ -304,6 +343,7 @@ public final class FreeTypeLibrary {
     private static native void nDoneFreeType(long libraryPtr);
     private static native long nNewFace(long libraryPtr, String filePath, int faceIndex);
     private static native long nNewFaceFromMemory(long libraryPtr, byte[] data, int dataLen, int faceIndex);
+    private static native long nNewFaceFromShared(long libraryPtr, long dataPtr, int faceIndex);
     private static native int[] nGetVersion(long libraryPtr);
     private static native int nGetFaceCount(long libraryPtr, String filePath);
     private static native int nGetFaceCountFromMemory(long libraryPtr, byte[] data, int dataLen);

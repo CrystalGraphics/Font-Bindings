@@ -139,3 +139,7 @@ See [docs/BUILD_NATIVES.md](docs/BUILD_NATIVES.md) for FreeType+HarfBuzz and [do
 ## License
 
 MIT License. FreeType is FTL/GPL2. HarfBuzz is MIT. MSDFgen is MIT.
+
+Two upstream files are replaced at build time, from `native/freetype-msdfgen-harfbuzz-jni/overrides/`:
+FreeType's `src/base/ftsystem.c` (a Windows file stream) and msdfgen's `ext/import-font.cpp`
+(face-index and no-copy loaders). Each carries its upstream licence header.

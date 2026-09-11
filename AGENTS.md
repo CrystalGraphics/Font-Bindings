@@ -200,7 +200,7 @@ No runtime dependencies other than the OS C runtime.
 | `include/jni/` | JNI headers for cross-compilation |
 | `native/freetype-msdfgen-harfbuzz-jni/src/cpp/` | JNI C++ sources |
 | `native/msdfgen-jni/msdfgen/` | MSDFgen source tree |
-| `native/freetype-msdfgen-harfbuzz-jni/overrides/` | Local msdfgen patches |
+| `native/freetype-msdfgen-harfbuzz-jni/overrides/` | Upstream files replaced before compiling: msdfgen's `ext/import-font.cpp`, FreeType's `src/base/ftsystem.c` |
 
 ## Configuration Cache
 
@@ -241,6 +241,26 @@ per glyph, and readback measured as **63% of all HarfBuzz time** before being re
 
 Before adding a native function that returns objects, ask whether primitives into a caller-owned
 array would do. `grep -c FindClass *.cpp` is a quick audit of where this pattern still exists.
+
+## Native gotcha: how a face reads its font
+
+**A file, on Windows, goes through our own `ftsystem.c`** (`overrides/freetype/`). FreeType's stdio
+stream opens the path in the ANSI code page and holds a handle without `FILE_SHARE_DELETE`: a font
+under a user profile named in another script did not open at all, and an installed font could not
+be uninstalled while a face on it was open. The override opens with `CreateFileW` from UTF-8, shares
+delete and write, and reads by position. Paths therefore cross JNI as UTF-8 proper (`utf8Of`), never
+`GetStringUTFChars`, whose modified UTF-8 is not UTF-8 for supplementary characters.
+`FontDataOwnershipTest` pins both, and fails against a stock build.
+
+**Bytes in memory are copied once per `FTFontData`**, not once per face: `newFaceFromFontData` and
+msdfgen's `loadFontData(FTFontData, int)` take a reference to the one native copy, released in
+`nDoneFace`/`nDestroyFont` after the face is gone. A binding holds the `FTFontData`'s monitor across
+the native call, which is what keeps `release()` from freeing the bytes before the call has its
+reference. The `byte[]` loaders still copy per face.
+
+**A map keyed by a native pointer is unmapped before the pointer is freed.** The allocator hands the
+same address to the next load at once, and on another thread that load can register itself between
+the free and a late erase, which then removes the new entry and leaks both.
 
 ## Native gotcha: finalizers can free a handle mid-call
 

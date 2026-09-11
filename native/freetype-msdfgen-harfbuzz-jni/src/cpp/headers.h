@@ -20,6 +20,23 @@ void throwFreeTypeException(JNIEnv *env, int errorCode, const char *message);
 
 #ifdef __cplusplus
 }
+
+#include <string>
+
+// Font bytes in native memory that FreeType faces and msdfgen fonts open without copying. Every holder
+// takes a reference and the bytes go with the last, so the Java owners may let go in any order.
+struct SharedFontData {
+    FT_Byte *bytes;
+    FT_Long size;
+    int refs;
+};
+
+SharedFontData *retainSharedFontData(jlong handle);
+void releaseSharedFontData(SharedFontData *data);
+
+// A Java string as UTF-8 proper, which FreeType's file stream takes; JNI's modified UTF-8 differs for
+// supplementary characters.
+std::string utf8Of(JNIEnv *env, jstring value);
 #endif
 
 #endif

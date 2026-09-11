@@ -1,5 +1,7 @@
 package com.crystalgraphics.msdfgen;
 
+import com.crystalgraphics.freetype.FTFontData;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,6 +98,35 @@ public final class FreeTypeMSDFIntegration {
     }
 
     /**
+     * Loads face {@code faceIndex} of a font file — a later face of a collection ({@code .ttc}) as
+     * well as face 0.
+     *
+     * <pre>{@code
+     * FreeTypeMSDFIntegration.Font second = ft.loadFont("fonts/family.ttc", 1);
+     * }</pre>
+     *
+     * @param path path to the font file
+     * @param faceIndex the face within the file, 0 for a single font
+     * @return a Font handle (must be destroyed when done)
+     * @throws MSDFException if the face cannot be loaded
+     */
+    public Font loadFont(String path, int faceIndex) {
+        checkNotDestroyed();
+        if (path == null || path.isEmpty()) {
+            throw new IllegalArgumentException("Font path must not be null or empty");
+        }
+        if (faceIndex < 0) {
+            throw new IllegalArgumentException("faceIndex must be >= 0, got: " + faceIndex);
+        }
+        long[] fontHandleOut = new long[1];
+        int result = MSDFNative.nLoadFontFace(ftHandle, path, faceIndex, fontHandleOut);
+        if (result != MSDFResult.SUCCESS || fontHandleOut[0] == 0) {
+            throw new MSDFException("Failed to load face " + faceIndex + " of font: " + path);
+        }
+        return new Font(ftHandle, fontHandleOut[0]);
+    }
+
+    /**
      * Loads a font from a File object.
      *
      * @param file the font file
@@ -129,6 +160,38 @@ public final class FreeTypeMSDFIntegration {
         int result = MSDFNative.nLoadFontData(ftHandle, data, data.length, fontHandleOut);
         if (result != MSDFResult.SUCCESS || fontHandleOut[0] == 0) {
             throw new MSDFException("Failed to load font from byte data");
+        }
+        return new Font(ftHandle, fontHandleOut[0]);
+    }
+
+    /**
+     * Loads face {@code faceIndex} of font bytes already in native memory, without copying them: the
+     * same copy a FreeType face on that data reads.
+     *
+     * <pre>{@code
+     * FTFontData data = FTFontData.copyOf(fontBytes);
+     * FreeTypeMSDFIntegration.Font font = ft.loadFontData(data, 0);
+     * data.release();   // the font keeps the bytes until it is destroyed
+     * }</pre>
+     *
+     * @throws MSDFException if the data cannot be parsed
+     * @throws IllegalStateException if the data has been released
+     */
+    public Font loadFontData(FTFontData data, int faceIndex) {
+        checkNotDestroyed();
+        if (data == null) {
+            throw new IllegalArgumentException("Font data must not be null");
+        }
+        if (faceIndex < 0) {
+            throw new IllegalArgumentException("faceIndex must be >= 0, got: " + faceIndex);
+        }
+        long[] fontHandleOut = new long[1];
+        int result;
+        synchronized (data) {
+            result = MSDFNative.nLoadSharedFontData(ftHandle, data.getNativePtr(), faceIndex, fontHandleOut);
+        }
+        if (result != MSDFResult.SUCCESS || fontHandleOut[0] == 0) {
+            throw new MSDFException("Failed to load face " + faceIndex + " of shared font data");
         }
         return new Font(ftHandle, fontHandleOut[0]);
     }

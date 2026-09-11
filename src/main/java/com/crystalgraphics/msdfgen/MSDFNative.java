@@ -268,9 +268,32 @@ final class MSDFNative {
     static native int nLoadFontData(long ftHandle, byte[] data, int dataLen, long[] fontHandleOut);
 
     /**
+     * Loads face {@code faceIndex} of a font file; a collection's later faces as well as face 0.
+     *
+     * @param ftHandle the FreeType handle
+     * @param filename path to the font file
+     * @param faceIndex the face within the file
+     * @param fontHandleOut single-element array to receive the font handle
+     * @return MSDF_SUCCESS on success, error code otherwise
+     */
+    static native int nLoadFontFace(long ftHandle, String filename, int faceIndex, long[] fontHandleOut);
+
+    /**
+     * Loads a face of shared native font bytes without copying them; the font holds a reference to
+     * the bytes until {@link #nDestroyFont}.
+     *
+     * @param ftHandle the FreeType handle
+     * @param dataHandle the handle of a live {@code FTFontData}
+     * @param faceIndex the face within the data
+     * @param fontHandleOut single-element array to receive the font handle
+     * @return MSDF_SUCCESS on success, error code otherwise
+     */
+    static native int nLoadSharedFontData(long ftHandle, long dataHandle, int faceIndex, long[] fontHandleOut);
+
+    /**
      * Destroys a loaded font and frees its resources.
      *
-     * @param fontHandle the font handle from {@link #nLoadFont} or {@link #nLoadFontData}
+     * @param fontHandle the font handle from any of the {@code nLoadFont*} loaders
      */
     static native void nDestroyFont(long fontHandle);
 
