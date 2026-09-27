@@ -9,7 +9,8 @@ if (isStandalone) {
 }
 
 group = "com.crystalgraphics"
-version = "1.0.0-SNAPSHOT"
+// Embedded, CrystalGraphics' version, which its root build publishes this under.
+version = if (isStandalone) "1.0.0-SNAPSHOT" else rootProject.version.toString()
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
