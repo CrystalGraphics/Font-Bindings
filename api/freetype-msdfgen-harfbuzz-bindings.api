@@ -1,0 +1,524 @@
+# The public API of com.crystalgraphics:freetype-msdfgen-harfbuzz-bindings:1.0.0 as last released. Written by apiDump; apiCheck fails on a removal.
+com/crystalgraphics/NativeLoader
+  access public,final
+  extends java/lang/Object
+  method public,static detectArch ()Ljava/lang/String;
+  method public,static detectOS ()Ljava/lang/String;
+  method public,static ensureLoaded ()V
+  method public,static getLibraryFileName ()Ljava/lang/String;
+  method public,static getPlatformIdentifier ()Ljava/lang/String;
+  method public,static isLoaded ()Z
+com/crystalgraphics/NativeReachability
+  access public,final
+  extends java/lang/Object
+  method public,static fence (Ljava/lang/Object;)V
+com/crystalgraphics/freetype/FTBitmap
+  access public,final
+  extends java/lang/Object
+  field public,static,final PIXEL_MODE_GRAY I
+  field public,static,final PIXEL_MODE_LCD I
+  field public,static,final PIXEL_MODE_MONO I
+  method public <init> (IIII[BII)V
+  method public getBuffer ()[B
+  method public getHeight ()I
+  method public getLeft ()I
+  method public getPitch ()I
+  method public getPixelMode ()I
+  method public getTop ()I
+  method public getWidth ()I
+  method public toString ()Ljava/lang/String;
+com/crystalgraphics/freetype/FTErrors
+  access public,final
+  extends java/lang/Object
+  field public,static,final FT_Err_Cannot_Open_Resource I
+  field public,static,final FT_Err_Cannot_Open_Stream I
+  field public,static,final FT_Err_Cannot_Render_Glyph I
+  field public,static,final FT_Err_Invalid_Argument I
+  field public,static,final FT_Err_Invalid_Character_Code I
+  field public,static,final FT_Err_Invalid_Face_Handle I
+  field public,static,final FT_Err_Invalid_File_Format I
+  field public,static,final FT_Err_Invalid_Glyph_Format I
+  field public,static,final FT_Err_Invalid_Glyph_Index I
+  field public,static,final FT_Err_Invalid_Handle I
+  field public,static,final FT_Err_Invalid_Library_Handle I
+  field public,static,final FT_Err_Invalid_Pixel_Size I
+  field public,static,final FT_Err_Invalid_Size_Handle I
+  field public,static,final FT_Err_Invalid_Version I
+  field public,static,final FT_Err_Ok I
+  field public,static,final FT_Err_Out_Of_Memory I
+  field public,static,final FT_Err_Unimplemented_Feature I
+  field public,static,final FT_Err_Unknown_File_Format I
+  method public,static checkError (ILjava/lang/String;)V
+  method public,static getMessage (I)Ljava/lang/String;
+com/crystalgraphics/freetype/FTFace
+  access public,final
+  extends java/lang/Object
+  method public destroy ()V
+  method public getAdvance (II)I
+  method public getAscender ()I
+  method public getCharIndex (I)I
+  method public getDescender ()I
+  method public getFamilyName ()Ljava/lang/String;
+  method public getGlyphBitmap ()Lcom/crystalgraphics/freetype/FTBitmap;
+  method public getGlyphMetrics ()Lcom/crystalgraphics/freetype/FTGlyphMetrics;
+  method public getHeight ()I
+  method public getKerning (III)[I
+  method public getNativePtr ()J
+  method public getNumFaces ()I
+  method public getNumGlyphs ()I
+  method public getStyleName ()Ljava/lang/String;
+  method public getUnitsPerEM ()I
+  method public getVariationAxes ()[Lcom/crystalgraphics/freetype/FTVariationAxisInfo;
+  method public hasActiveDependents ()Z
+  method public hasKerning ()Z
+  method public isDestroyed ()Z
+  method public loadChar (II)V
+  method public loadGlyph (II)V
+  method public outlineEmbolden (J)V
+  method public outlineShear (D)V
+  method public outlineTranslate (JJ)V
+  method public registerDependent (Ljava/lang/Object;)V
+  method public renderGlyph (I)V
+  method public setCharSize (IIII)V
+  method public setPixelSizes (II)V
+  method public setVariationCoordinates ([Ljava/lang/String;[F)V
+com/crystalgraphics/freetype/FTFaceDetector
+  access public,final
+  extends java/lang/Object
+  method public,static detectFaceIndices (Lcom/crystalgraphics/freetype/FreeTypeLibrary;Ljava/io/InputStream;)[I
+  method public,static detectFaceIndices (Lcom/crystalgraphics/freetype/FreeTypeLibrary;Ljava/lang/String;)[I
+  method public,static detectFaceIndices (Lcom/crystalgraphics/freetype/FreeTypeLibrary;[B)[I
+  method public,static getFaceCount (Lcom/crystalgraphics/freetype/FreeTypeLibrary;Ljava/io/InputStream;)I
+  method public,static getFaceCount (Lcom/crystalgraphics/freetype/FreeTypeLibrary;Ljava/lang/String;)I
+  method public,static getFaceCount (Lcom/crystalgraphics/freetype/FreeTypeLibrary;[B)I
+com/crystalgraphics/freetype/FTFontData
+  access public,final
+  extends java/lang/Object
+  method public getNativePtr ()J
+  method public isReleased ()Z
+  method public release ()V
+  method public size ()I
+  method public,static copyOf ([B)Lcom/crystalgraphics/freetype/FTFontData;
+com/crystalgraphics/freetype/FTGlyphMetrics
+  access public,final
+  extends java/lang/Object
+  method public <init> (IIIIIIII)V
+  method public getHeight ()I
+  method public getHeightPixels ()I
+  method public getHoriAdvance ()I
+  method public getHoriAdvancePixels ()I
+  method public getHoriBearingX ()I
+  method public getHoriBearingY ()I
+  method public getVertAdvance ()I
+  method public getVertBearingX ()I
+  method public getVertBearingY ()I
+  method public getWidth ()I
+  method public getWidthPixels ()I
+  method public toString ()Ljava/lang/String;
+com/crystalgraphics/freetype/FTLoadFlags
+  access public,final
+  extends java/lang/Object
+  field public,static,final FT_LOAD_COLOR I
+  field public,static,final FT_LOAD_DEFAULT I
+  field public,static,final FT_LOAD_FORCE_AUTOHINT I
+  field public,static,final FT_LOAD_LINEAR_DESIGN I
+  field public,static,final FT_LOAD_MONOCHROME I
+  field public,static,final FT_LOAD_NO_AUTOHINT I
+  field public,static,final FT_LOAD_NO_BITMAP I
+  field public,static,final FT_LOAD_NO_HINTING I
+  field public,static,final FT_LOAD_NO_SCALE I
+  field public,static,final FT_LOAD_PEDANTIC I
+  field public,static,final FT_LOAD_RENDER I
+  field public,static,final FT_LOAD_VERTICAL_LAYOUT I
+com/crystalgraphics/freetype/FTRenderMode
+  access public,final
+  extends java/lang/Object
+  field public,static,final FT_RENDER_MODE_LCD I
+  field public,static,final FT_RENDER_MODE_LCD_V I
+  field public,static,final FT_RENDER_MODE_MONO I
+  field public,static,final FT_RENDER_MODE_NORMAL I
+com/crystalgraphics/freetype/FTVariationAxisInfo
+  access public,final
+  extends java/lang/Object
+  method public <init> (Ljava/lang/String;Ljava/lang/String;FFF)V
+  method public equals (Ljava/lang/Object;)Z
+  method public getDefaultValue ()F
+  method public getMaxValue ()F
+  method public getMinValue ()F
+  method public getName ()Ljava/lang/String;
+  method public getTag ()Ljava/lang/String;
+  method public hashCode ()I
+  method public toString ()Ljava/lang/String;
+com/crystalgraphics/freetype/FreeTypeException
+  access public
+  extends java/lang/RuntimeException
+  method public <init> (ILjava/lang/String;)V
+  method public getErrorCode ()I
+com/crystalgraphics/freetype/FreeTypeLibrary
+  access public,final
+  extends java/lang/Object
+  method public destroy ()V
+  method public getFaceCount (Ljava/io/InputStream;)I
+  method public getFaceCount (Ljava/lang/String;)I
+  method public getFaceCount ([B)I
+  method public getVersion ()[I
+  method public getVersionString ()Ljava/lang/String;
+  method public hasActiveFaces ()Z
+  method public isDestroyed ()Z
+  method public newFace (Ljava/lang/String;I)Lcom/crystalgraphics/freetype/FTFace;
+  method public newFaceFromFontData (Lcom/crystalgraphics/freetype/FTFontData;I)Lcom/crystalgraphics/freetype/FTFace;
+  method public newFaceFromMemory ([BI)Lcom/crystalgraphics/freetype/FTFace;
+  method public newFaceFromStream (Ljava/io/InputStream;)Lcom/crystalgraphics/freetype/FTFace;
+  method public newFaceFromStream (Ljava/io/InputStream;I)Lcom/crystalgraphics/freetype/FTFace;
+  method public,static create ()Lcom/crystalgraphics/freetype/FreeTypeLibrary;
+com/crystalgraphics/harfbuzz/HBBuffer
+  access public,final
+  extends java/lang/Object
+  field public,static,final INFO_STRIDE I
+  field public,static,final POSITION_STRIDE I
+  method public addCodepoints ([I)V
+  method public addUTF8 (Ljava/lang/String;)V
+  method public addUTF8 (Ljava/lang/String;II)V
+  method public clearContents ()V
+  method public destroy ()V
+  method public getDirection ()I
+  method public getGlyphData ([I[I)I
+  method public getGlyphInfos ()[Lcom/crystalgraphics/harfbuzz/HBGlyphInfo;
+  method public getGlyphPositions ()[Lcom/crystalgraphics/harfbuzz/HBGlyphPosition;
+  method public getLength ()I
+  method public getNativePtr ()J
+  method public getScript ()I
+  method public guessSegmentProperties ()V
+  method public isDestroyed ()Z
+  method public reset ()V
+  method public setDirection (I)V
+  method public setLanguage (Ljava/lang/String;)V
+  method public setScript (I)V
+  method public,static create ()Lcom/crystalgraphics/harfbuzz/HBBuffer;
+com/crystalgraphics/harfbuzz/HBDirection
+  access public,final
+  extends java/lang/Object
+  field public,static,final HB_DIRECTION_BTT I
+  field public,static,final HB_DIRECTION_INVALID I
+  field public,static,final HB_DIRECTION_LTR I
+  field public,static,final HB_DIRECTION_RTL I
+  field public,static,final HB_DIRECTION_TTB I
+  method public,static isBackward (I)Z
+  method public,static isForward (I)Z
+  method public,static isHorizontal (I)Z
+  method public,static isVertical (I)Z
+com/crystalgraphics/harfbuzz/HBFont
+  access public,final
+  extends java/lang/Object
+  method public <init> (J)V
+  method public destroy ()V
+  method public getNativePtr ()J
+  method public getPpem ()[I
+  method public getScale ()[I
+  method public isDestroyed ()Z
+  method public setPpem (II)V
+  method public setScale (II)V
+  method public setVariations ([Ljava/lang/String;[F)V
+  method public,static createFromFile (Ljava/lang/String;)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static createFromFile (Ljava/lang/String;I)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static createFromMemory ([B)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static createFromMemory ([BI)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static createFromStream (Ljava/io/InputStream;)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static createFromStream (Ljava/io/InputStream;I)Lcom/crystalgraphics/harfbuzz/HBFont;
+com/crystalgraphics/harfbuzz/HBGlyphInfo
+  access public,final
+  extends java/lang/Object
+  field public,static,final HB_GLYPH_FLAG_UNSAFE_TO_BREAK I
+  method public <init> (III)V
+  method public getCluster ()I
+  method public getCodepoint ()I
+  method public getFlags ()I
+  method public isUnsafeToBreak ()Z
+  method public toString ()Ljava/lang/String;
+com/crystalgraphics/harfbuzz/HBGlyphPosition
+  access public,final
+  extends java/lang/Object
+  method public <init> (IIII)V
+  method public getXAdvance ()I
+  method public getXOffset ()I
+  method public getYAdvance ()I
+  method public getYOffset ()I
+  method public toString ()Ljava/lang/String;
+com/crystalgraphics/harfbuzz/HBScript
+  access public,final
+  extends java/lang/Object
+  field public,static,final HB_SCRIPT_ARABIC I
+  field public,static,final HB_SCRIPT_ARMENIAN I
+  field public,static,final HB_SCRIPT_BENGALI I
+  field public,static,final HB_SCRIPT_CANADIAN_SYLLABICS I
+  field public,static,final HB_SCRIPT_CHEROKEE I
+  field public,static,final HB_SCRIPT_COMMON I
+  field public,static,final HB_SCRIPT_CYRILLIC I
+  field public,static,final HB_SCRIPT_DEVANAGARI I
+  field public,static,final HB_SCRIPT_ETHIOPIC I
+  field public,static,final HB_SCRIPT_GEORGIAN I
+  field public,static,final HB_SCRIPT_GREEK I
+  field public,static,final HB_SCRIPT_GUJARATI I
+  field public,static,final HB_SCRIPT_GURMUKHI I
+  field public,static,final HB_SCRIPT_HAN I
+  field public,static,final HB_SCRIPT_HANGUL I
+  field public,static,final HB_SCRIPT_HEBREW I
+  field public,static,final HB_SCRIPT_HIRAGANA I
+  field public,static,final HB_SCRIPT_INHERITED I
+  field public,static,final HB_SCRIPT_KANNADA I
+  field public,static,final HB_SCRIPT_KATAKANA I
+  field public,static,final HB_SCRIPT_KHMER I
+  field public,static,final HB_SCRIPT_LAO I
+  field public,static,final HB_SCRIPT_LATIN I
+  field public,static,final HB_SCRIPT_MALAYALAM I
+  field public,static,final HB_SCRIPT_MONGOLIAN I
+  field public,static,final HB_SCRIPT_MYANMAR I
+  field public,static,final HB_SCRIPT_ORIYA I
+  field public,static,final HB_SCRIPT_SINHALA I
+  field public,static,final HB_SCRIPT_SYRIAC I
+  field public,static,final HB_SCRIPT_TAMIL I
+  field public,static,final HB_SCRIPT_TELUGU I
+  field public,static,final HB_SCRIPT_THAANA I
+  field public,static,final HB_SCRIPT_THAI I
+  field public,static,final HB_SCRIPT_TIBETAN I
+  field public,static,final HB_SCRIPT_UNKNOWN I
+  field public,static,final HB_SCRIPT_YI I
+  method public,static tag (CCCC)I
+com/crystalgraphics/harfbuzz/HBShape
+  access public,final
+  extends java/lang/Object
+  method public,static shape (Lcom/crystalgraphics/harfbuzz/HBFont;Lcom/crystalgraphics/harfbuzz/HBBuffer;)V
+  method public,static shape (Lcom/crystalgraphics/harfbuzz/HBFont;Lcom/crystalgraphics/harfbuzz/HBBuffer;[Ljava/lang/String;)V
+com/crystalgraphics/msdfgen/FreeTypeMSDFIntegration
+  access public,final
+  extends java/lang/Object
+  field public,static,final FONT_SCALING_EM_NORMALIZED I
+  field public,static,final FONT_SCALING_LEGACY I
+  field public,static,final FONT_SCALING_NONE I
+  method public destroy ()V
+  method public isDestroyed ()Z
+  method public loadFont (Ljava/io/File;)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public loadFont (Ljava/io/InputStream;)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public loadFont (Ljava/lang/String;)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public loadFont (Ljava/lang/String;I)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public loadFontData (Lcom/crystalgraphics/freetype/FTFontData;I)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public loadFontData ([B)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font;
+  method public,static create ()Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration;
+  method public,static isAvailable ()Z
+com/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$Font
+  access public,final
+  extends java/lang/Object
+  method public destroy ()V
+  method public getGlyphIndex (I)I
+  method public getKerning (II)D
+  method public getKerningByIndex (II)D
+  method public isDestroyed ()Z
+  method public loadGlyph (I)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$GlyphData;
+  method public loadGlyph (II)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$GlyphData;
+  method public loadGlyphByIndex (I)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$GlyphData;
+  method public loadGlyphByIndex (II)Lcom/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$GlyphData;
+  method public setVariations ([Ljava/lang/String;[F)V
+com/crystalgraphics/msdfgen/FreeTypeMSDFIntegration$GlyphData
+  access public,final
+  extends java/lang/Object
+  method public getAdvance ()D
+  method public getShape ()Lcom/crystalgraphics/msdfgen/MSDFShape;
+com/crystalgraphics/msdfgen/MSDFBitmap
+  access public,final
+  extends java/lang/Object
+  method public free ()V
+  method public getByteSize ()J
+  method public getChannelCount ()I
+  method public getHeight ()I
+  method public getPixelData ()[F
+  method public getPixelPointer ()J
+  method public getType ()I
+  method public getWidth ()I
+  method public isFreed ()Z
+  method public,static alloc (III)Lcom/crystalgraphics/msdfgen/MSDFBitmap;
+  method public,static allocMsdf (II)Lcom/crystalgraphics/msdfgen/MSDFBitmap;
+  method public,static allocMtsdf (II)Lcom/crystalgraphics/msdfgen/MSDFBitmap;
+  method public,static allocPsdf (II)Lcom/crystalgraphics/msdfgen/MSDFBitmap;
+  method public,static allocSdf (II)Lcom/crystalgraphics/msdfgen/MSDFBitmap;
+com/crystalgraphics/msdfgen/MSDFConstants
+  access public,final
+  extends java/lang/Object
+  field public,static,final BITMAP_TYPE_MAX I
+  field public,static,final BITMAP_TYPE_MSDF I
+  field public,static,final BITMAP_TYPE_MTSDF I
+  field public,static,final BITMAP_TYPE_PSDF I
+  field public,static,final BITMAP_TYPE_SDF I
+  field public,static,final DEFAULT_MIN_DEVIATION_RATIO D
+  field public,static,final DEFAULT_MIN_IMPROVE_RATIO D
+  field public,static,final DISTANCE_CHECK_ALWAYS I
+  field public,static,final DISTANCE_CHECK_AT_EDGE I
+  field public,static,final DISTANCE_CHECK_NONE I
+  field public,static,final ERROR_CORRECTION_DISABLED I
+  field public,static,final ERROR_CORRECTION_EDGE_ONLY I
+  field public,static,final ERROR_CORRECTION_EDGE_PRIORITY I
+  field public,static,final ERROR_CORRECTION_INDISCRIMINATE I
+  field public,static,final MSDF_FALSE I
+  field public,static,final MSDF_TRUE I
+  field public,static,final ORIENTATION_Y_DOWNWARD I
+  field public,static,final ORIENTATION_Y_UPWARD I
+  field public,static,final SEGMENT_TYPE_CUBIC I
+  field public,static,final SEGMENT_TYPE_LINEAR I
+  field public,static,final SEGMENT_TYPE_MAX I
+  field public,static,final SEGMENT_TYPE_QUADRATIC I
+  method public,static channelCountForType (I)I
+com/crystalgraphics/msdfgen/MSDFContour
+  access public,final
+  extends java/lang/Object
+  method public addEdge (Lcom/crystalgraphics/msdfgen/MSDFSegment;)V
+  method public free ()V
+  method public getBounds ()[D
+  method public getBoundsMiters ([DDDI)[D
+  method public getEdge (I)Lcom/crystalgraphics/msdfgen/MSDFSegment;
+  method public getEdgeCount ()I
+  method public getWinding ()I
+  method public isFreed ()Z
+  method public removeEdge (Lcom/crystalgraphics/msdfgen/MSDFSegment;)V
+  method public reverse ()V
+  method public,static create ()Lcom/crystalgraphics/msdfgen/MSDFContour;
+com/crystalgraphics/msdfgen/MSDFEdgeColor
+  access public,final
+  extends java/lang/Object
+  field public,static,final BLACK I
+  field public,static,final BLUE I
+  field public,static,final CYAN I
+  field public,static,final GREEN I
+  field public,static,final MAGENTA I
+  field public,static,final RED I
+  field public,static,final WHITE I
+  field public,static,final YELLOW I
+com/crystalgraphics/msdfgen/MSDFException
+  access public
+  extends java/lang/RuntimeException
+  method public <init> (I)V
+  method public <init> (Ljava/lang/String;)V
+  method public <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+  method public getErrorCode ()I
+com/crystalgraphics/msdfgen/MSDFGenerator
+  access public,final
+  extends java/lang/Object
+  method public,static distanceSignCorrection (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;I)V
+  method public,static errorCorrection (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static errorCorrection (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;IIDD)V
+  method public,static errorCorrectionFastDistance (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static errorCorrectionFastDistance (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;D)V
+  method public,static errorCorrectionFastEdge (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static errorCorrectionFastEdge (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;D)V
+  method public,static generateMsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static generateMsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;ZIIDD)V
+  method public,static generateMtsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static generateMtsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;ZIIDD)V
+  method public,static generatePsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static generatePsdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;Z)V
+  method public,static generateSdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static generateSdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFShape;Lcom/crystalgraphics/msdfgen/MSDFTransform;Z)V
+  method public,static renderSdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;)V
+  method public,static renderSdf (Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFBitmap;Lcom/crystalgraphics/msdfgen/MSDFTransform;F)V
+com/crystalgraphics/msdfgen/MSDFResult
+  access public,final
+  extends java/lang/Object
+  field public,static,final ERR_FAILED I
+  field public,static,final ERR_INVALID_ARG I
+  field public,static,final ERR_INVALID_INDEX I
+  field public,static,final ERR_INVALID_SIZE I
+  field public,static,final ERR_INVALID_TYPE I
+  field public,static,final SUCCESS I
+  method public,static check (I)V
+  method public,static describe (I)Ljava/lang/String;
+  method public,static isSuccess (I)Z
+com/crystalgraphics/msdfgen/MSDFSegment
+  access public,final
+  extends java/lang/Object
+  method public free ()V
+  method public getBounds ()[D
+  method public getColor ()I
+  method public getDirection (D)[D
+  method public getDirectionChange (D)[D
+  method public getPoint (I)[D
+  method public getPointCount ()I
+  method public getType ()I
+  method public isFreed ()Z
+  method public moveEndPoint (DD)V
+  method public moveStartPoint (DD)V
+  method public point (D)[D
+  method public setColor (I)V
+  method public setPoint (IDD)V
+  method public,static create (I)Lcom/crystalgraphics/msdfgen/MSDFSegment;
+  method public,static createCubic ()Lcom/crystalgraphics/msdfgen/MSDFSegment;
+  method public,static createLinear ()Lcom/crystalgraphics/msdfgen/MSDFSegment;
+  method public,static createQuadratic ()Lcom/crystalgraphics/msdfgen/MSDFSegment;
+com/crystalgraphics/msdfgen/MSDFSegmentType
+  access public,final
+  extends java/lang/Object
+  field public,static,final CUBIC I
+  field public,static,final LINEAR I
+  field public,static,final QUADRATIC I
+  method public,static isValid (I)Z
+  method public,static name (I)Ljava/lang/String;
+  method public,static pointCount (I)I
+com/crystalgraphics/msdfgen/MSDFShape
+  access public,final
+  extends java/lang/Object
+  method public addContour ()Lcom/crystalgraphics/msdfgen/MSDFContour;
+  method public edgeColoringByDistance (D)V
+  method public edgeColoringInkTrap (D)V
+  method public edgeColoringSimple (D)V
+  method public free ()V
+  method public getBounds ()[D
+  method public getBoundsMiters ([DDDI)[D
+  method public getContour (I)Lcom/crystalgraphics/msdfgen/MSDFContour;
+  method public getContourCount ()I
+  method public getEdgeCount ()I
+  method public getOneShotDistance (DD)D
+  method public getYAxisOrientation ()I
+  method public isFreed ()Z
+  method public normalize ()V
+  method public orientContours ()V
+  method public removeContour (Lcom/crystalgraphics/msdfgen/MSDFContour;)V
+  method public setYAxisOrientation (I)V
+  method public validate ()Z
+  method public,static create ()Lcom/crystalgraphics/msdfgen/MSDFShape;
+com/crystalgraphics/msdfgen/MSDFShapeSynthesis
+  access public,final
+  extends java/lang/Object
+  method public,static shear (Lcom/crystalgraphics/msdfgen/MSDFShape;D)V
+com/crystalgraphics/msdfgen/MSDFTransform
+  access public,final
+  extends java/lang/Object
+  method public <init> ()V
+  method public getRangeLower ()D
+  method public getRangeUpper ()D
+  method public getScaleX ()D
+  method public getScaleY ()D
+  method public getTranslateX ()D
+  method public getTranslateY ()D
+  method public range (D)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+  method public range (DD)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+  method public scale (D)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+  method public scale (DD)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+  method public translate (DD)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+  method public,static autoFrame (Lcom/crystalgraphics/msdfgen/MSDFShape;IID)Lcom/crystalgraphics/msdfgen/MSDFTransform;
+com/crystalgraphics/msdfgen/examples/AdvancedSDF
+  access public
+  extends java/lang/Object
+  method public <init> ()V
+  method public,static main ([Ljava/lang/String;)V
+com/crystalgraphics/msdfgen/examples/BasicSDF
+  access public
+  extends java/lang/Object
+  method public <init> ()V
+  method public,static main ([Ljava/lang/String;)V
+com/crystalgraphics/msdfgen/examples/PerformanceExample
+  access public
+  extends java/lang/Object
+  method public <init> ()V
+  method public,static main ([Ljava/lang/String;)V
+com/crystalgraphics/text/FreeTypeHarfBuzzIntegration
+  access public,final
+  extends java/lang/Object
+  method public,static createHBFontFromFTFace (Lcom/crystalgraphics/freetype/FTFace;)Lcom/crystalgraphics/harfbuzz/HBFont;
+  method public,static syncFontMetrics (Lcom/crystalgraphics/harfbuzz/HBFont;Lcom/crystalgraphics/freetype/FTFace;)V
