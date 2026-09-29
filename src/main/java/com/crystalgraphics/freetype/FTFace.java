@@ -221,8 +221,7 @@ public final class FTFace {
     /**
      * Synthesizes bold by thickening the currently loaded glyph's outline in-place, via
      * {@code FT_Outline_Embolden} — the same primitive Skia's {@code SkFreetypeUtil}/
-     * {@code SkScalerContext_FreeType} synthetic-bold path uses (see
-     * {@code docs_research/SYNTHETIC_BOLD_ITALIC_RESEARCH.md}). Must be called after
+     * {@code SkScalerContext_FreeType} synthetic-bold path uses. Must be called after
      * {@link #loadGlyph}/{@link #loadChar} and before {@link #renderGlyph}, same ordering as
      * {@link #outlineTranslate}.
      *
