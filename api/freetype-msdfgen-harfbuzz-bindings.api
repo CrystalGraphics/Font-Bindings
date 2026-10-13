@@ -1,4 +1,4 @@
-# The public API of com.crystalgraphics:freetype-msdfgen-harfbuzz-bindings:1.0.0 as last released. Written by apiDump; apiCheck fails on a removal.
+# The public API of com.crystalgraphics:freetype-msdfgen-harfbuzz-bindings:0.0.1 as last released. Written by apiDump; apiCheck fails on a removal.
 com/crystalgraphics/NativeLoader
   access public,final
   extends java/lang/Object
